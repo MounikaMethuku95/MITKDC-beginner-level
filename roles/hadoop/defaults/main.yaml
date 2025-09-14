@@ -3,7 +3,7 @@ hadoop_user: hadoop
 hadoop_group: hadoop
 
 # Hadoop version and download
-hadoop_version: "3.2.1"
+hadoop_version: "3.2.4"
 hadoop_tarball: "hadoop-{{ hadoop_version }}.tar.gz"
 hadoop_download_url: "https://downloads.apache.org/hadoop/common/hadoop-{{ hadoop_version }}/{{ hadoop_tarball }}"
 
