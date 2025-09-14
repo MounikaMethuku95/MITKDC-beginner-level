@@ -8,41 +8,38 @@
   - openldap-servers
   - openldap-clients
     
-
-# Configure the suffix and root DN
-# (Tells OpenLDAP which "base DN" it should manage)
-# --------------------------
 - name: Configure root DN (olcSuffix + rootdn + rootpw)
   ansible.builtin.template:
     src: configure-rootdn.ldif.j2
     dest: /tmp/configure-rootdn.ldif
+    mode: '0644'
 
-- name: Apply root DN config to slapd
-  ansible.builtin.command: ldapmodify -Y EXTERNAL -H ldapi:/// -f /tmp/configure-rootdn.ldif
-  # -Y EXTERNAL : authenticate as the root of cn=config (no password needed)
-  # -H ldapi:/// : use local UNIX socket to talk to slapd
-  # -f           : apply LDIF file
-  ignore_errors: true   # ignore errors so reruns don’t fail if already applied
+- name: Apply root DN config to slapd (ldapmodify via ldapi:///)
+  ansible.builtin.command:
+    cmd: ldapmodify -Y EXTERNAL -H ldapi:/// -f /tmp/configure-rootdn.ldif
+  ignore_errors: true
   notify: Restart slapd
 
-# Force restart slapd before continuing
 - name: Ensure slapd is restarted before adding base DN
   ansible.builtin.service:
     name: slapd
     state: restarted
 
-
-# Create the base DN entry
 - name: Deploy base DN LDIF (dc=hadoop,dc=test)
   ansible.builtin.template:
     src: basedn.ldif.j2
     dest: /tmp/basedn.ldif
+    mode: '0644'
 
 - name: Apply base DN (actually add entry into LDAP database)
-  ansible.builtin.command: ldapadd -x -D "{{ ldap_rootdn }}" -w {{ ldap_rootpw }} -f /tmp/basedn.ldif
-  # -x           : use simple bind (not SASL)
-  # -D rootdn    : bind as rootdn (from vars/defaults)
-  # -w rootpw    : use root password (from vars/defaults)
-  # -f           : load LDIF file
-  ignore_errors: true   # prevents failures on repeated runs
+  ansible.builtin.command:
+    cmd: ldapadd -x -D "{{ ldap_rootdn }}" -w "{{ ldap_rootpw }}" -f /tmp/basedn.ldif
+  ignore_errors: true
   notify: Restart slapd
+
+- name: Verify base DN exists (quick search)
+  ansible.builtin.command:
+    cmd: ldapsearch -x -D "{{ ldap_rootdn }}" -w "{{ ldap_rootpw }}" -b "{{ ldap_basedn }}" -LLL dn
+  register: ldap_search_out
+  failed_when: false
+  changed_when: false

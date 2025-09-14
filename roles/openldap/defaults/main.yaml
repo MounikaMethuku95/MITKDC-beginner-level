@@ -1,12 +1,18 @@
+# OpenLDAP defaults
+
 # Base DN of the directory
 ldap_basedn: "dc=hadoop,dc=test"
 
-# Root DN (LDAP administrator account)
+# Root DN (LDAP administrator account) - used for ldapadd simple binds
 ldap_rootdn: "cn=Manager,dc=hadoop,dc=test"
 
-# Root password (plaintext - used for ldapadd bind)
+# Root password (plaintext) - used by ldapadd/ldapmodify when doing simple binds
+# Keep this secret in production.
 ldap_rootpw: "admin123"
 
-# Root password (hashed - used in OpenLDAP configuration)
-# Generate with: slappasswd -s admin123
-ldap_rootpw_hashed: "{SSHA}f3o9kD2rV2Bp5OdpZ8tC1K1mBnA4F+0z"
+# Root password hashed (the exact output of slappasswd -s admin123)
+# Replace this value with the string you got from "sudo slappasswd -s admin123"
+ldap_rootpw_hashed: "{SSHA}654EhKBlrouvA0B7kah8BF5B1buO9SW4"
+
+# DB index discovered on this host
+ldap_db_index: "{2}mdb"
