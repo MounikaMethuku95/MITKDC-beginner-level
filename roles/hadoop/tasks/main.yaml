@@ -1,232 +1,151 @@
-# roles/hadoop/tasks/main.yaml
-# Installs Hadoop 3.2.1, configures, formats namenode once, creates systemd units and starts services.
-
+# Hadoop installation & configuration tasks
+# Fail early if not root
 - name: Assert we run as root (fail early if not)
   ansible.builtin.assert:
-    that: ansible_user_id == 'root' or ansible_become is defined
-    fail_msg: "Play should be run with become: true or as root."
+    that: ansible_user_id == "root"
+    fail_msg: "You must run Hadoop installation as root!"
 
-# 1) Install Java - choose package based on distro
+# Set Java package name based on OS
 - name: Set Java package and JAVA_HOME based on OS
   ansible.builtin.set_fact:
-    java_package: "{{ java_package_redhat if ansible_facts['os_family'] == 'RedHat' else java_package_debian }}"
-    java_home_guess: "{{ java_home_redhat if ansible_facts['os_family'] == 'RedHat' else java_home_debian }}"
+    java_pkg: "{{ 'java-11-openjdk-devel' if ansible_os_family == 'RedHat' else 'openjdk-11-jdk' }}"
+    java_home: "{{ '/usr/lib/jvm/java-11-openjdk' if ansible_os_family == 'RedHat' else '/usr/lib/jvm/java-11-openjdk-amd64' }}"
 
+# Install Java
 - name: Install Java package
   ansible.builtin.package:
-    name: "{{ java_package }}"
+    name: "{{ java_pkg }}"
     state: present
-  become: true
 
-# 2) Create hadoop group and user
+# Ensure hadoop group exists
 - name: Ensure hadoop group exists
   ansible.builtin.group:
-    name: "{{ hadoop_group }}"
+    name: hadoop
     state: present
-  become: true
 
+# Ensure hadoop user exists
 - name: Ensure hadoop user exists
   ansible.builtin.user:
-    name: "{{ hadoop_user }}"
-    group: "{{ hadoop_group }}"
-    create_home: no
+    name: hadoop
+    group: hadoop
+    create_home: yes
     shell: /bin/bash
     state: present
-  become: true
 
-# 3) Create parent and HDFS data directories
+# Ensure directories for Hadoop exist
 - name: Ensure parent directories exist
   ansible.builtin.file:
     path: "{{ item }}"
     state: directory
-    owner: "{{ hadoop_user }}"
-    group: "{{ hadoop_group }}"
+    owner: hadoop
+    group: hadoop
     mode: '0755'
   loop:
-    - "{{ hadoop_parent }}"
-    - "{{ hadoop_namenode_dir }}"
-    - "{{ hadoop_datanode_dir }}"
-    - "{{ hadoop_tmp_dir }}"
-  become: true
+    - /opt
+    - /opt/hadoop
+    - /var/lib/hadoop/hdfs/namenode
+    - /var/lib/hadoop/hdfs/datanode
+    - /var/lib/hadoop/tmp
 
-# 4) Download Hadoop tarball
+# Download Hadoop tarball if not already there
 - name: Download Hadoop tarball
   ansible.builtin.get_url:
-    url: "{{ hadoop_download_url }}"
-    dest: "/tmp/{{ hadoop_tarball }}"
+    url: "https://downloads.apache.org/hadoop/common/hadoop-3.2.0/hadoop-3.2.0.tar.gz"
+    dest: /opt/hadoop-3.2.0.tar.gz
     mode: '0644'
-    force: no
-  become: true
+  register: hadoop_download
+  when: not (ansible_facts['os_family'] == 'Debian' and ansible_distribution_major_version|int >= 12)
 
+# Extract Hadoop tarball
 - name: Extract Hadoop tarball (if not already installed)
   ansible.builtin.unarchive:
-    src: "/tmp/{{ hadoop_tarball }}"
-    dest: "{{ hadoop_parent }}"
-    extra_opts: [--strip-components=1]
-    creates: "{{ hadoop_home }}"
-  become: true
+    src: /opt/hadoop-3.2.0.tar.gz
+    dest: /opt/
+    remote_src: yes
+    creates: /opt/hadoop-3.2.0
+  when: hadoop_download is changed
 
-# 5) Create symlink /opt/hadoop -> current version
+# Create symbolic link /opt/hadoop
 - name: Create hadoop symlink to versioned directory
   ansible.builtin.file:
-    src: "{{ hadoop_home }}"
-    dest: "{{ hadoop_symlink }}"
+    src: /opt/hadoop-3.2.0
+    dest: /opt/hadoop
     state: link
-    owner: "{{ hadoop_user }}"
-    group: "{{ hadoop_group }}"
-  become: true
+    force: yes
 
-# 6) Ensure ownership of hadoop directories
-- name: Ensure ownership of hadoop install and data dirs
-  ansible.builtin.file:
-    path: "{{ item }}"
-    state: directory
-    recurse: yes
-    owner: "{{ hadoop_user }}"
-    group: "{{ hadoop_group }}"
-  loop:
-    - "{{ hadoop_home }}"
-    - "{{ hadoop_symlink }}"
-    - "{{ hadoop_namenode_dir }}"
-    - "{{ hadoop_datanode_dir }}"
-    - "{{ hadoop_tmp_dir }}"
-  become: true
-
-# 7) Deploy hadoop-env.sh (sets JAVA_HOME)
-- name: Deploy hadoop-env.sh
-  ansible.builtin.template:
-    src: hadoop-env.sh.j2
-    dest: "{{ hadoop_symlink }}/etc/hadoop/hadoop-env.sh"
-    owner: "{{ hadoop_user }}"
-    group: "{{ hadoop_group }}"
-    mode: '0644'
-  become: true
-
-# 8) Deploy XML config files
+# Deploy Hadoop configuration files
 - name: Deploy core-site.xml
   ansible.builtin.template:
     src: core-site.xml.j2
-    dest: "{{ hadoop_symlink }}/etc/hadoop/core-site.xml"
-    owner: "{{ hadoop_user }}"
-    group: "{{ hadoop_group }}"
+    dest: /opt/hadoop/etc/hadoop/core-site.xml
+    owner: hadoop
+    group: hadoop
     mode: '0644'
-  become: true
+  notify:
+    - Restart NameNode
+    - Restart DataNode
 
 - name: Deploy hdfs-site.xml
   ansible.builtin.template:
     src: hdfs-site.xml.j2
-    dest: "{{ hadoop_symlink }}/etc/hadoop/hdfs-site.xml"
-    owner: "{{ hadoop_user }}"
-    group: "{{ hadoop_group }}"
+    dest: /opt/hadoop/etc/hadoop/hdfs-site.xml
+    owner: hadoop
+    group: hadoop
     mode: '0644'
-  become: true
+  notify:
+    - Restart NameNode
+    - Restart DataNode
 
 - name: Deploy yarn-site.xml
   ansible.builtin.template:
     src: yarn-site.xml.j2
-    dest: "{{ hadoop_symlink }}/etc/hadoop/yarn-site.xml"
-    owner: "{{ hadoop_user }}"
-    group: "{{ hadoop_group }}"
+    dest: /opt/hadoop/etc/hadoop/yarn-site.xml
+    owner: hadoop
+    group: hadoop
     mode: '0644'
-  become: true
+  notify:
+    - Restart ResourceManager
+    - Restart NodeManager
 
 - name: Deploy mapred-site.xml
   ansible.builtin.template:
     src: mapred-site.xml.j2
-    dest: "{{ hadoop_symlink }}/etc/hadoop/mapred-site.xml"
-    owner: "{{ hadoop_user }}"
-    group: "{{ hadoop_group }}"
+    dest: /opt/hadoop/etc/hadoop/mapred-site.xml
+    owner: hadoop
+    group: hadoop
     mode: '0644'
-  become: true
+  notify:
+    - Restart ResourceManager
+    - Restart NodeManager
 
-# 9) Ensure HDFS name/current does not exist before formatting
-- name: Check whether namenode is already formatted
-  ansible.builtin.stat:
-    path: "{{ hadoop_namenode_dir }}/current/VERSION"
-  register: namenode_version
-  become: true
-
-# 10) Format namenode only if not formatted yet
-- name: Format HDFS NameNode (only runs once)
-  ansible.builtin.command:
-    cmd: "{{ hadoop_symlink }}/bin/hdfs namenode -format -force -nonInteractive"
-    creates: "{{ hadoop_namenode_dir }}/current/VERSION"
-    chdir: "{{ hadoop_symlink }}"
-    warn: false
-  become: true
-  become_user: "{{ hadoop_user }}"
-  when: not namenode_version.stat.exists
-
-# 11) Create simple systemd unit files (NameNode, DataNode, ResourceManager, NodeManager)
-- name: Deploy systemd unit for hadoop-namenode
+- name: Deploy hadoop-env.sh
   ansible.builtin.template:
-    src: hadoop-namenode.service.j2
-    dest: /etc/systemd/system/hadoop-namenode.service
-    mode: '0644'
-  become: true
+    src: hadoop-env.sh.j2
+    dest: /opt/hadoop/etc/hadoop/hadoop-env.sh
+    owner: hadoop
+    group: hadoop
+    mode: '0755'
+  notify:
+    - Restart NameNode
+    - Restart DataNode
+    - Restart ResourceManager
+    - Restart NodeManager
 
-- name: Deploy systemd unit for hadoop-datanode
-  ansible.builtin.template:
-    src: hadoop-datanode.service.j2
-    dest: /etc/systemd/system/hadoop-datanode.service
-    mode: '0644'
+# Format NameNode (only if not formatted already)
+- name: Format NameNode (first time only)
+  ansible.builtin.command: /opt/hadoop/bin/hdfs namenode -format -force
+  args:
+    creates: /var/lib/hadoop/hdfs/namenode/current
   become: true
+  become_user: hadoop
 
-- name: Deploy systemd unit for hadoop-resourcemanager
-  ansible.builtin.template:
-    src: hadoop-resourcemanager.service.j2
-    dest: /etc/systemd/system/hadoop-resourcemanager.service
-    mode: '0644'
+# Start Hadoop services (HDFS + YARN)
+- name: Start HDFS daemons (NameNode, DataNode)
+  ansible.builtin.shell: /opt/hadoop/sbin/start-dfs.sh
   become: true
+  become_user: hadoop
 
-- name: Deploy systemd unit for hadoop-nodemanager
-  ansible.builtin.template:
-    src: hadoop-nodemanager.service.j2
-    dest: /etc/systemd/system/hadoop-nodemanager.service
-    mode: '0644'
+- name: Start YARN daemons (ResourceManager, NodeManager)
+  ansible.builtin.shell: /opt/hadoop/sbin/start-yarn.sh
   become: true
-
-# 12) Reload systemd and enable/start services
-- name: Reload systemd daemon
-  ansible.builtin.systemd:
-    daemon_reload: yes
-  become: true
-  notify: Reload systemd
-
-- name: Enable and start Hadoop NameNode
-  ansible.builtin.systemd:
-    name: hadoop-namenode
-    enabled: yes
-    state: started
-  become: true
-
-- name: Enable and start Hadoop DataNode
-  ansible.builtin.systemd:
-    name: hadoop-datanode
-    enabled: yes
-    state: started
-  become: true
-
-- name: Enable and start Hadoop ResourceManager
-  ansible.builtin.systemd:
-    name: hadoop-resourcemanager
-    enabled: yes
-    state: started
-  become: true
-
-- name: Enable and start Hadoop NodeManager
-  ansible.builtin.systemd:
-    name: hadoop-nodemanager
-    enabled: yes
-    state: started
-  become: true
-
-# 13) Simple health check: run 'hdfs dfs -ls /' to ensure HDFS responds (non-fatal)
-- name: Quick HDFS check
-  ansible.builtin.command:
-    cmd: "{{ hadoop_symlink }}/bin/hdfs dfs -ls /"
-  become: true
-  become_user: "{{ hadoop_user }}"
-  register: hdfs_check
-  failed_when: false
-  changed_when: false
+  become_user: hadoop

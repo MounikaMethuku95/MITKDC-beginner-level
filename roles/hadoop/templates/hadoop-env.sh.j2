@@ -1,6 +1,5 @@
-# Minimal hadoop-env.sh for Hadoop 3.x
-export JAVA_HOME={{ java_home_guess }}
-export HADOOP_HOME={{ hadoop_symlink }}
-export HADOOP_CONF_DIR={{ hadoop_symlink }}/etc/hadoop
-export HADOOP_LOG_DIR={{ hadoop_symlink }}/logs
-export HADOOP_OPTS="$HADOOP_OPTS -Djava.net.preferIPv4Stack=true"
+# Hadoop environment variables
+export JAVA_HOME={{ java_home }}
+export HADOOP_HOME=/opt/hadoop
+export HADOOP_CONF_DIR=$HADOOP_HOME/etc/hadoop
+export PATH=$PATH:$HADOOP_HOME/bin:$HADOOP_HOME/sbin

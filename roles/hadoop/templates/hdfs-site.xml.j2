@@ -1,17 +1,20 @@
-<?xml version="1.0"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <configuration>
+  <!-- Namenode storage directory -->
+  <property>
+    <name>dfs.namenode.name.dir</name>
+    <value>file:/var/lib/hadoop/hdfs/namenode</value>
+  </property>
+
+  <!-- Datanode storage directory -->
+  <property>
+    <name>dfs.datanode.data.dir</name>
+    <value>file:/var/lib/hadoop/hdfs/datanode</value>
+  </property>
+
+  <!-- Replication factor (1 for single-node setup) -->
   <property>
     <name>dfs.replication</name>
     <value>1</value>
-  </property>
-
-  <property>
-    <name>dfs.namenode.name.dir</name>
-    <value>file://{{ hadoop_namenode_dir }}</value>
-  </property>
-
-  <property>
-    <name>dfs.datanode.data.dir</name>
-    <value>file://{{ hadoop_datanode_dir }}</value>
   </property>
 </configuration>

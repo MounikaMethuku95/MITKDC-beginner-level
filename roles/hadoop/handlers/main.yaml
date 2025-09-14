@@ -1,12 +1,31 @@
  # Note: handlers below call systemd units individually when needed. This handler is a convenience.
+# Handlers for Hadoop services (HDFS + YARN)
 
-
-- name: Restart Hadoop services
-  ansible.builtin.service:
-    name: hadoop-namenode
-    state: restarted
-
-- name: Reload systemd
-  ansible.builtin.command: systemctl daemon-reload
+- name: Restart NameNode
+  ansible.builtin.shell: |
+    /opt/hadoop/sbin/stop-dfs.sh || true
+    /opt/hadoop/sbin/start-dfs.sh
   become: true
-  changed_when: false
+  become_user: hadoop
+
+- name: Restart DataNode
+  ansible.builtin.shell: |
+    /opt/hadoop/sbin/hadoop-daemon.sh stop datanode || true
+    /opt/hadoop/sbin/hadoop-daemon.sh start datanode
+  become: true
+  become_user: hadoop
+
+- name: Restart ResourceManager
+  ansible.builtin.shell: |
+    /opt/hadoop/sbin/stop-yarn.sh || true
+    /opt/hadoop/sbin/start-yarn.sh
+  become: true
+  become_user: hadoop
+
+- name: Restart NodeManager
+  ansible.builtin.shell: |
+    /opt/hadoop/sbin/yarn-daemon.sh stop nodemanager || true
+    /opt/hadoop/sbin/yarn-daemon.sh start nodemanager
+  become: true
+  become_user: hadoop
+
