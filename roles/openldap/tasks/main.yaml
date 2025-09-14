@@ -1,11 +1,13 @@
 ---
 - name: Install OpenLDAP packages
   ansible.builtin.package:
-    name:
-      - slapd
-      - ldap-utils
+    name: "{{ item }}"
     state: present
-
+  loop: 
+  - openldap
+  - openldap-servers
+  - openldap-clients
+    
 - name: Deploy base DN LDIF
   ansible.builtin.template:
     src: basedn.ldif.j2
