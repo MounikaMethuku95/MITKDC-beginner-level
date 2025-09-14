@@ -1,3 +1,11 @@
----
-ldap_rootdn: "cn=Manager,{{ basedn }}"
-ldap_rootpw: "secret"
+# Base DN of the directory
+ldap_basedn: "dc=hadoop,dc=test"
+
+# Root DN (LDAP administrator account)
+ldap_rootdn: "cn=Manager,dc=hadoop,dc=test"
+
+# Root password (plaintext for now, better to hash later)
+ldap_rootpw: "admin123"
+
+# Example of hashed password (can be generated with slappasswd)
+ldap_rootpw_hashed: "{SSHA}examplehash"

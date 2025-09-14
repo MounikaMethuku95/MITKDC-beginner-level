@@ -1,6 +1,13 @@
-dn: {{ basedn }}
+# Define the base DN entry
+dn: {{ ldap_basedn }}
 objectClass: top
 objectClass: dcObject
 objectClass: organization
-o: Hadoop Test
+o: Hadoop Test Organization
 dc: hadoop
+
+# Add the admin user under the base DN
+dn: {{ ldap_rootdn }}
+objectClass: organizationalRole
+cn: Manager
+description: Directory Manager

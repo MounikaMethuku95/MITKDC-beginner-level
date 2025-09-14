@@ -1,7 +1,17 @@
-dn: olcDatabase={2}hdb,cn=config
+# Configure database {2} to manage our suffix
+dn: olcDatabase={2}mdb,cn=config
+changetype: modify
+replace: olcSuffix
+olcSuffix: {{ ldap_basedn }}
+
+# Set the root DN (LDAP admin user)
+dn: olcDatabase={2}mdb,cn=config
 changetype: modify
 replace: olcRootDN
 olcRootDN: {{ ldap_rootdn }}
--
+
+# Set the root DN password (must be hashed if possible)
+dn: olcDatabase={2}mdb,cn=config
+changetype: modify
 replace: olcRootPW
-olcRootPW: {{ ldap_rootpw }}
+olcRootPW: {{ ldap_rootpw_hashed }}
