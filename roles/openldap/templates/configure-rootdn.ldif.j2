@@ -1,0 +1,7 @@
+dn: olcDatabase={2}hdb,cn=config
+changetype: modify
+replace: olcRootDN
+olcRootDN: {{ ldap_rootdn }}
+-
+replace: olcRootPW
+olcRootPW: {{ ldap_rootpw }}

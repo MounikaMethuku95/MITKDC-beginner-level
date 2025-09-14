@@ -1,0 +1,18 @@
+---
+- name: Install Kerberos packages
+  ansible.builtin.package:
+    name:
+      - krb5-kdc
+      - krb5-admin-server
+    state: present
+
+- name: Deploy krb5.conf
+  ansible.builtin.template:
+    src: krb5.conf.j2
+    dest: /etc/krb5.conf
+
+- name: Deploy kdc.conf
+  ansible.builtin.template:
+    src: kdc.conf.j2
+    dest: /etc/krb5kdc/kdc.conf
+  notify: Restart krb5kdc

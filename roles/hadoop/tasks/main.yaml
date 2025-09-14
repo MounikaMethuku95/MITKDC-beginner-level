@@ -1,0 +1,33 @@
+---
+- name: Install Java
+  ansible.builtin.package:
+    name: openjdk-11-jdk
+    state: present
+
+- name: Create Hadoop home directory
+  ansible.builtin.file:
+    path: "{{ hadoop_home }}"
+    state: directory
+    owner: "{{ ansible_user | default('root') }}"
+    mode: '0755'
+
+- name: Deploy core-site.xml
+  ansible.builtin.template:
+    src: core-site.xml.j2
+    dest: "{{ hadoop_home }}/core-site.xml"
+
+- name: Deploy hdfs-site.xml
+  ansible.builtin.template:
+    src: hdfs-site.xml.j2
+    dest: "{{ hadoop_home }}/hdfs-site.xml"
+
+- name: Deploy yarn-site.xml
+  ansible.builtin.template:
+    src: yarn-site.xml.j2
+    dest: "{{ hadoop_home }}/yarn-site.xml"
+
+- name: Deploy mapred-site.xml
+  ansible.builtin.template:
+    src: mapred-site.xml.j2
+    dest: "{{ hadoop_home }}/mapred-site.xml"
+  notify: Restart Hadoop

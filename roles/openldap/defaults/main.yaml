@@ -1,0 +1,3 @@
+---
+ldap_rootdn: "cn=Manager,{{ basedn }}"
+ldap_rootpw: "secret"

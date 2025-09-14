@@ -1,0 +1,22 @@
+---
+- name: Install OpenLDAP packages
+  ansible.builtin.package:
+    name:
+      - slapd
+      - ldap-utils
+    state: present
+
+- name: Deploy base DN LDIF
+  ansible.builtin.template:
+    src: basedn.ldif.j2
+    dest: /tmp/basedn.ldif
+
+- name: Configure root DN
+  ansible.builtin.template:
+    src: configure-rootdn.ldif.j2
+    dest: /tmp/configure-rootdn.ldif
+
+- name: Apply base DN
+  ansible.builtin.command: ldapadd -Y EXTERNAL -H ldapi:/// -f /tmp/basedn.ldif
+  ignore_errors: true
+  notify: Restart slapd

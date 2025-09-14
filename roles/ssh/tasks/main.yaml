@@ -1,0 +1,11 @@
+---
+- name: Install OpenSSH server
+  ansible.builtin.package:
+    name: openssh-server
+    state: present
+
+- name: Deploy sshd_config
+  ansible.builtin.template:
+    src: sshd_config.j2
+    dest: /etc/ssh/sshd_config
+  notify: Restart sshd

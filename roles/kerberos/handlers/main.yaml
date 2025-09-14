@@ -1,0 +1,5 @@
+---
+- name: Restart krb5kdc
+  ansible.builtin.service:
+    name: krb5-kdc
+    state: restarted

@@ -1,0 +1,3 @@
+realm: HADOOP.TEST
+basedn: "dc=hadoop,dc=test"
+hadoop_home: /opt/hadoop

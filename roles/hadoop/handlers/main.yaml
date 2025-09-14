@@ -1,0 +1,4 @@
+---
+- name: Restart Hadoop
+  ansible.builtin.debug:
+    msg: "Pretend to restart Hadoop services here."
