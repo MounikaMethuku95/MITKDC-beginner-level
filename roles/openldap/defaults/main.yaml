@@ -4,8 +4,9 @@ ldap_basedn: "dc=hadoop,dc=test"
 # Root DN (LDAP administrator account)
 ldap_rootdn: "cn=Manager,dc=hadoop,dc=test"
 
-# Root password (plaintext for now, better to hash later)
+# Root password (plaintext - used for ldapadd bind)
 ldap_rootpw: "admin123"
 
-# Example of hashed password (can be generated with slappasswd)
-ldap_rootpw_hashed: "{SSHA}examplehash"
+# Root password (hashed - used in OpenLDAP configuration)
+# Generate with: slappasswd -s admin123
+ldap_rootpw_hashed: "{SSHA}f3o9kD2rV2Bp5OdpZ8tC1K1mBnA4F+0z"

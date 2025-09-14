@@ -10,7 +10,7 @@ changetype: modify
 replace: olcRootDN
 olcRootDN: {{ ldap_rootdn }}
 
-# Set the root DN password (must be hashed if possible)
+# Set the root DN password (hashed version)
 dn: olcDatabase={2}mdb,cn=config
 changetype: modify
 replace: olcRootPW
