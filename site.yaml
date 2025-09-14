@@ -1,6 +1,6 @@
 - name: Beginner Realistic Hadoop-Kerberos-OpenLDAP Setup
   hosts: all
-  become: yes
+  become: true
   roles:
     - openldap
     - kerberos

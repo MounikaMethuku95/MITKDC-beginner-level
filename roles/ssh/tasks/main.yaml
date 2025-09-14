@@ -1,14 +1,57 @@
+# Install OpenSSH and safely manage sshd_config
 - name: Install OpenSSH server
   ansible.builtin.package:
     name: openssh-server
     state: present
+  become: true   # root needed
 
-- name: Deploy sshd_config
-  ansible.builtin.template:
-    src: sshd_config.j2
-    dest: /etc/ssh/sshd_config
-    owner: root
-    group: root
-    mode: '0600'
-  become: true   # ensures this runs as root
-  notify: Restart sshd
+- name: Manage sshd_config safely
+  block:
+    - name: Backup current sshd_config
+      ansible.builtin.copy:
+        src: /etc/ssh/sshd_config
+        dest: /etc/ssh/sshd_config.backup
+        remote_src: true
+        owner: root
+        group: root
+        mode: '0600'
+      become: true
+
+    - name: Deploy new sshd_config
+      ansible.builtin.template:
+        src: sshd_config.j2
+        dest: /etc/ssh/sshd_config
+        owner: root
+        group: root
+        mode: '0600'
+      become: true
+
+    - name: Validate sshd_config before restart
+      ansible.builtin.command: sshd -t
+      become: true
+      register: sshd_check
+      changed_when: false
+      failed_when: sshd_check.rc != 0
+
+    - name: Restart sshd
+      ansible.builtin.service:
+        name: sshd
+        state: restarted
+      become: true
+
+  rescue:
+    - name: Restore backup sshd_config
+      ansible.builtin.copy:
+        src: /etc/ssh/sshd_config.backup
+        dest: /etc/ssh/sshd_config
+        remote_src: true
+        owner: root
+        group: root
+        mode: '0600'
+      become: true
+
+    - name: Restart sshd after restore
+      ansible.builtin.service:
+        name: sshd
+        state: restarted
+      become: true
