@@ -1,4 +1,12 @@
----
-- name: Restart Hadoop
-  ansible.builtin.debug:
-    msg: "Pretend to restart Hadoop services here."
+ # Note: handlers below call systemd units individually when needed. This handler is a convenience.
+
+
+- name: Restart Hadoop services
+  ansible.builtin.service:
+    name: hadoop-namenode
+    state: restarted
+
+- name: Reload systemd
+  ansible.builtin.command: systemctl daemon-reload
+  become: true
+  changed_when: false

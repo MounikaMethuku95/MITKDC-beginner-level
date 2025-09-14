@@ -1,0 +1,15 @@
+[Unit]
+Description=Hadoop DataNode
+After=network.target
+
+[Service]
+Type=forking
+User={{ hadoop_user }}
+Group={{ hadoop_group }}
+ExecStart={{ hadoop_symlink }}/sbin/hadoop-daemon.sh start datanode
+ExecStop={{ hadoop_symlink }}/sbin/hadoop-daemon.sh stop datanode
+Restart=on-failure
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target

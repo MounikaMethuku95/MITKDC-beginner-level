@@ -1,0 +1,14 @@
+[Unit]
+Description=Hadoop NodeManager
+After=network.target
+
+[Service]
+Type=forking
+User={{ hadoop_user }}
+Group={{ hadoop_group }}
+ExecStart={{ hadoop_symlink }}/sbin/yarn-daemon.sh start nodemanager
+ExecStop={{ hadoop_symlink }}/sbin/yarn-daemon.sh stop nodemanager
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

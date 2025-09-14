@@ -1,2 +1,30 @@
----
+# defaults for hadoop role
 hadoop_user: hadoop
+hadoop_group: hadoop
+
+# Hadoop version and download
+hadoop_version: "3.2.1"
+hadoop_tarball: "hadoop-{{ hadoop_version }}.tar.gz"
+hadoop_download_url: "https://downloads.apache.org/hadoop/common/hadoop-{{ hadoop_version }}/{{ hadoop_tarball }}"
+
+# Installation paths
+hadoop_parent: /opt
+hadoop_home: "{{ hadoop_parent }}/hadoop-{{ hadoop_version }}"
+hadoop_symlink: "{{ hadoop_parent }}/hadoop"
+
+# Java package name depending on platform; tasks will compute final package with a conditional fallback
+java_package_debian: openjdk-11-jdk
+java_package_redhat: java-11-openjdk-devel
+
+# Hadoop directories for HDFS
+hadoop_namenode_dir: /var/lib/hadoop/hdfs/namenode
+hadoop_datanode_dir: /var/lib/hadoop/hdfs/datanode
+hadoop_tmp_dir: /var/lib/hadoop/tmp
+
+# Memory / basic yarn config (beginner defaults)
+yarn_nodemanager_memory_mb: 1024
+yarn_resourcemanager_hostname: localhost
+
+# Java home defaults by OS family (if not detected)
+java_home_debian: /usr/lib/jvm/java-11-openjdk-amd64
+java_home_redhat: /usr/lib/jvm/java-11-openjdk
