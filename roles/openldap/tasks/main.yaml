@@ -8,8 +8,10 @@
   - openldap-servers
   - openldap-clients
     
+
 # Configure the suffix and root DN
 # (Tells OpenLDAP which "base DN" it should manage)
+# --------------------------
 - name: Configure root DN (olcSuffix + rootdn + rootpw)
   ansible.builtin.template:
     src: configure-rootdn.ldif.j2
@@ -22,6 +24,12 @@
   # -f           : apply LDIF file
   ignore_errors: true   # ignore errors so reruns don’t fail if already applied
   notify: Restart slapd
+
+# Force restart slapd before continuing
+- name: Ensure slapd is restarted before adding base DN
+  ansible.builtin.service:
+    name: slapd
+    state: restarted
 
 
 # Create the base DN entry

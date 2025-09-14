@@ -1,14 +1,22 @@
----
 - name: Install Kerberos packages
   ansible.builtin.package:
     name: "{{ item }}"
     state: present
-  loop: 
-  - krb5-server
-  - krb5-server-ldap
-  - krb5-libs
-  - krb5-workstation
-  
+  loop:
+    - krb5-server
+    - krb5-server-ldap
+    - krb5-libs
+    - krb5-workstation
+
+# Ensure directory exists
+- name: Ensure KDC config directory exists
+  ansible.builtin.file:
+    path: /etc/krb5kdc
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+
 - name: Deploy krb5.conf
   ansible.builtin.template:
     src: krb5.conf.j2
@@ -18,4 +26,3 @@
   ansible.builtin.template:
     src: kdc.conf.j2
     dest: /etc/krb5kdc/kdc.conf
-  notify: Restart krb5kdc
