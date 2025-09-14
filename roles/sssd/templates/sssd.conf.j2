@@ -1,0 +1,28 @@
+# roles/sssd/templates/sssd.conf.j2
+# Minimal SSSD config: LDAP for identity, Kerberos for auth.
+[sssd]
+domains = default
+config_file_version = 2
+services = nss, pam
+
+[domain/default]
+id_provider = ldap
+auth_provider = krb5
+chpass_provider = krb5
+
+# LDAP settings
+ldap_uri = {{ sssd_ldap_uri }}
+ldap_search_base = {{ sssd_ldap_search_base }}
+ldap_default_bind_dn = {{ sssd_ldap_default_bind_dn }}
+ldap_default_authtok = {{ sssd_ldap_default_authtok }}
+ldap_default_bind_dn = {{ sssd_ldap_default_bind_dn }}
+
+# Kerberos settings
+krb5_realm = {{ kerberos_realm }}
+krb5_server = {{ kerberos_kdc }}
+
+# Use simple certificate policy for quick testing (NOT recommended for prod)
+ldap_tls_reqcert = allow
+
+# Create home directories on first login
+override_homedir = /home/%u

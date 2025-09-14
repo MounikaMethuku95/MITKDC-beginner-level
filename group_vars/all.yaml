@@ -1,3 +1,47 @@
+# Global vars used across roles. Replace secrets with vault in production.
+
+# -- Domain / LDAP --
 realm: HADOOP.TEST
+domain: hadoop.test
 basedn: "dc=hadoop,dc=test"
-hadoop_home: /opt/hadoop
+ldap_rootdn: "cn=Manager,{{ basedn }}"
+ldap_rootpw: "admin123"                              # plaintext (used for binds)
+ldap_rootpw_hashed: "{SSHA}654EhKBlrouvA0B7kah8BF5B1buO9SW4"  # slappasswd -s admin123 output
+
+# OL C DB index discovered earlier
+ldap_db_index: "{2}mdb"
+
+# -- Kerberos --
+kerberos_realm: "{{ realm }}"
+kerberos_kdc: localhost
+kerberos_admin_principal: "admin/admin@{{ kerberos_realm }}"   # KDC admin principal to create
+kerberos_admin_pw: "kadmin123"
+
+# Directory to store generated keytabs
+keytab_dir: /etc/security/keytabs
+
+# Service principals we will create for Hadoop (name => principal)
+# Use the FQDN/hostname placeholders as appropriate (here using localhost for single node)
+hadoop_service_principals:
+  - { name: namenode, principal: "nn/localhost@{{ kerberos_realm }}" }
+  - { name: datanode, principal: "dn/localhost@{{ kerberos_realm }}" }
+  - { name: resourcemanager, principal: "rm/localhost@{{ kerberos_realm }}" }
+  - { name: nodemanager, principal: "nm/localhost@{{ kerberos_realm }}" }
+  - { name: hdfs, principal: "hdfs/localhost@{{ kerberos_realm }}" }
+
+# -- SSSD --
+sssd_ldap_uri: "ldap://localhost"
+sssd_ldap_search_base: "{{ basedn }}"
+sssd_ldap_default_bind_dn: "{{ ldap_rootdn }}"
+sssd_ldap_default_authtok: "{{ ldap_rootpw }}"
+
+# -- Hadoop --
+hadoop_version: "3.2.4"
+hadoop_parent: /opt
+hadoop_home: "{{ hadoop_parent }}/hadoop-{{ hadoop_version }}"
+hadoop_symlink: "{{ hadoop_parent }}/hadoop"
+hadoop_user: hadoop
+hadoop_group: hadoop
+hadoop_namenode_dir: /var/lib/hadoop/hdfs/namenode
+hadoop_datanode_dir: /var/lib/hadoop/hdfs/datanode
+hadoop_tmp_dir: /var/lib/hadoop/tmp

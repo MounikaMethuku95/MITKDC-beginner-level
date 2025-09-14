@@ -1,8 +1,16 @@
-- name: Beginner Realistic Hadoop-Kerberos-OpenLDAP Setup
+- name: MITKDC + OpenLDAP + SSSD + Hadoop single node deployment
   hosts: all
   become: true
+  become_method: sudo
+  vars_files:
+    - group_vars/all.yaml
+
+  # Execution/order matters: set up SSH, then LDAP (identity),
+  # then Kerberos (auth + KDC), then SSSD (nss/pam integration),
+  # and finally Hadoop (which can rely on LDAP/SSSD users + Kerberos principals).
   roles:
-    - openldap
-    - kerberos
-    - ssh
-    - hadoop
+    - role: ssh
+    - role: openldap
+    - role: kerberos
+    - role: sssd
+    - role: hadoop

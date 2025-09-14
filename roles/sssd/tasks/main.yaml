@@ -1,0 +1,55 @@
+# Install and configure SSSD so the node uses LDAP for identity and Kerberos for auth.
+
+- name: Install sssd and helper packages
+  ansible.builtin.package:
+    name:
+      - sssd
+      - sssd-tools
+      - oddjob
+      - oddjob-mkhomedir
+      - authconfig  # useful on RHEL/CentOS; ignored on Debian
+    state: present
+  become: true
+
+- name: Ensure keytab dir exists (some distros require /etc/ssh or /etc/security exist)
+  ansible.builtin.file:
+    path: /etc/security
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+  become: true
+
+- name: Create /etc/sssd directory
+  ansible.builtin.file:
+    path: /etc/sssd
+    state: directory
+    owner: root
+    group: root
+    mode: '0700'
+  become: true
+
+- name: Deploy sssd.conf
+  ansible.builtin.template:
+    src: sssd.conf.j2
+    dest: /etc/sssd/sssd.conf
+    owner: root
+    group: root
+    mode: '0600'
+  become: true
+  notify:
+    - Restart sssd
+
+- name: Ensure mkhomedir pam module is enabled (RHEL-family)
+  ansible.builtin.command: authconfig --enablemkhomedir --update
+  become: true
+  changed_when: false
+  failed_when: false
+  when: ansible_facts['os_family'] == "RedHat"
+
+- name: Ensure sssd service is enabled
+  ansible.builtin.service:
+    name: sssd
+    enabled: true
+    state: started
+  become: true

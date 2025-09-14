@@ -1,0 +1,79 @@
+# Create admin principal (if needed), create service principals for Hadoop, and
+# export keytabs to /etc/security/keytabs/*.keytab with correct ownership.
+
+- name: Ensure keytab directory exists
+  ansible.builtin.file:
+    path: "{{ keytab_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+  become: true
+
+# Create Kerberos admin principal (kadmin principal) if not present
+- name: Create Kerberos admin principal (kadmin/admin) if missing
+  ansible.builtin.command:
+    cmd: >
+      kadmin.local -q "getprinc {{ kerberos_admin_principal }}"
+  register: kadmin_check
+  failed_when: false
+  changed_when: false
+  become: true
+
+- name: Add Kerberos admin principal if it does not exist
+  ansible.builtin.command:
+    cmd: >
+      kadmin.local -q "addprinc -pw {{ kerberos_admin_pw }} {{ kerberos_admin_principal }}"
+  when: "'Principal does not exist' in (kadmin_check.stderr | default('')) or kadmin_check.rc != 0"
+  become: true
+
+# Create service principals and keytabs for Hadoop services
+- name: Create service principals and export keytabs (loop)
+  block:
+    - name: Ensure principal exists (create if needed)
+      ansible.builtin.command:
+        cmd: kadmin.local -q "addprinc -randkey {{ item.principal }}"
+      register: addprinc_out
+      failed_when: false
+      changed_when: "'created' in (addprinc_out.stdout + addprinc_out.stderr)"
+      become: true
+
+    - name: Create keytab for {{ item.name }}
+      ansible.builtin.command:
+        cmd: kadmin.local -q "ktadd -k {{ keytab_dir }}/{{ item.name }}.keytab {{ item.principal }}"
+      args:
+        creates: "{{ keytab_dir }}/{{ item.name }}.keytab"
+      become: true
+
+    - name: Set ownership and permissions on {{ item.name }} keytab
+      ansible.builtin.file:
+        path: "{{ keytab_dir }}/{{ item.name }}.keytab"
+        owner: root
+        group: root
+        mode: '0600'
+      become: true
+  loop: "{{ hadoop_service_principals }}"
+
+# Optional: create a generic hdfs principal & keytab (commonly used)
+- name: Create hdfs principal and keytab (optional)
+  ansible.builtin.command:
+    cmd: kadmin.local -q "addprinc -randkey hdfs/localhost@{{ kerberos_realm }}"
+  register: hdfs_add
+  failed_when: false
+  changed_when: false
+  become: true
+
+- name: Generate hdfs keytab if not present
+  ansible.builtin.command:
+    cmd: kadmin.local -q "ktadd -k {{ keytab_dir }}/hdfs.keytab hdfs/localhost@{{ kerberos_realm }}"
+  args:
+    creates: "{{ keytab_dir }}/hdfs.keytab"
+  become: true
+
+- name: Ensure hdfs keytab ownership
+  ansible.builtin.file:
+    path: "{{ keytab_dir }}/hdfs.keytab"
+    owner: root
+    group: root
+    mode: '0600'
+  become: true
