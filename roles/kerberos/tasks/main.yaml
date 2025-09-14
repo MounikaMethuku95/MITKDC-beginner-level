@@ -1,11 +1,14 @@
 ---
 - name: Install Kerberos packages
   ansible.builtin.package:
-    name:
-      - krb5-kdc
-      - krb5-admin-server
+    name: "{{ item }}"
     state: present
-
+  loop: 
+  - krb5-server
+  - krb5-server-ldap
+  - krb5-libs
+  - krb5-workstation
+  
 - name: Deploy krb5.conf
   ansible.builtin.template:
     src: krb5.conf.j2
