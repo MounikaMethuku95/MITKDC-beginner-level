@@ -40,7 +40,8 @@
   notify:
     - Restart sssd
 
-- name: Ensure mkhomedir pam module is enabled (RHEL-family)
+#Pluggable Authentication Modules → Linux login mechanism.
+- name: Ensure mkhomedir pam module is enabled (RHEL-family) 
   ansible.builtin.command: authconfig --enablemkhomedir --update
   become: true
   changed_when: false
