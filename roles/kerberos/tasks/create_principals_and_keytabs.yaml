@@ -28,7 +28,7 @@
   become: true
 
 # Create service principals and keytabs for Hadoop services
-- name: Create service principals and export keytabs (loop)
+- name: Create service principals and export keytabs
   block:
     - name: Ensure principal exists (create if needed)
       ansible.builtin.command:
