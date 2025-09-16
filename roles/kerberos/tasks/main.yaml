@@ -27,5 +27,5 @@
     src: kdc.conf.j2
     dest: /etc/krb5kdc/kdc.conf
 
-- import_tasks: create_principals_and_keytabs.yml
+- import_tasks: ./create_principals_and_keytabs.yaml
 
