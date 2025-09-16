@@ -52,7 +52,8 @@
         group: root
         mode: '0600'
       become: true
-  loop: "{{ hadoop_service_principals }}"
+  loop: 
+    - "{{ hadoop_service_principals }}"
 
 # Optional: create a generic hdfs principal & keytab (commonly used)
 - name: Create hdfs principal and keytab (optional)
