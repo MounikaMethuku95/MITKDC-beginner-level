@@ -33,6 +33,7 @@
     - name: Ensure principal exists (create if needed)
       ansible.builtin.command:
         cmd: kadmin.local -q "addprinc -randkey {{ item.principal }}"
+      loop: "{{ hadoop_service_principals }}"
       register: addprinc_out
       failed_when: false
       changed_when: "'created' in (addprinc_out.stdout + addprinc_out.stderr)"
@@ -43,6 +44,7 @@
         cmd: kadmin.local -q "ktadd -k {{ keytab_dir }}/{{ item.name }}.keytab {{ item.principal }}"
       args:
         creates: "{{ keytab_dir }}/{{ item.name }}.keytab"
+      loop: "{{ hadoop_service_principals }}"
       become: true
 
     - name: Set ownership and permissions on {{ item.name }} keytab
@@ -52,8 +54,8 @@
         group: root
         mode: '0600'
       become: true
-  loop: 
-    - "{{ hadoop_service_principals }}"
+      loop: "{{ hadoop_service_principals }}"
+  
 
 # Optional: create a generic hdfs principal & keytab (commonly used)
 - name: Create hdfs principal and keytab (optional)
